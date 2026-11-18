@@ -1,0 +1,32 @@
+{
+  "font": "DejaVu Sans",
+  "accent": "#2563EB",
+  "neutral": "#B8BEC8",
+  "palette": [
+    "#2563EB",
+    "#F59E0B",
+    "#10B981",
+    "#EF4444",
+    "#8B5CF6",
+    "#64748B"
+  ],
+  "text": "#1F2937",
+  "muted": "#6B7280",
+  "grid": "#E5E7EB",
+  "background": "#FFFFFF",
+  "title_size": 15,
+  "subtitle_size": 11,
+  "label_size": 10,
+  "source_size": 8.5,
+  "figsize": [
+    9,
+    5.2
+  ],
+  "dashboard_figsize": [
+    15,
+    9.5
+  ],
+  "dpi": 200,
+  "currency_symbol": "$",
+  "decimals": 0
+}

@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Talk with Nimras</title>
+<link rel="icon" href="/mascot/avatar.png">
+<script>
+  // Match the theme chosen in the main workspace, before the page paints.
+  try { const t = JSON.parse(localStorage.getItem("nimras.theme")); if (t) document.documentElement.dataset.theme = t; } catch {}
+</script>
+<style>
+  :root {
+    --bg: #f6f7fb; --surface: #ffffff; --surface-2: #f0f2f7; --text: #14161c; --muted: #687083;
+    --border: #e3e6ee; --accent: #5b4ff5; --accent-soft: rgba(91, 79, 245, .10);
+    --user-bg: #5b4ff5; --user-text: #fff; --code: #f2f4f8; --danger: #e5484d; --ok: #2fb36d;
+    --shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 6px 20px rgba(16, 24, 40, .06);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1115; --surface: #171a21; --surface-2: #1f232c; --text: #e8eaf0; --muted: #959cad;
+      --border: #282c36; --accent: #8b80ff; --accent-soft: rgba(139, 128, 255, .14);
+      --user-bg: #4b40d8; --code: #0b0d11; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1115; --surface: #171a21; --surface-2: #1f232c; --text: #e8eaf0; --muted: #959cad;
+    --border: #282c36; --accent: #8b80ff; --accent-soft: rgba(139, 128, 255, .14);
+    --user-bg: #4b40d8; --code: #0b0d11; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.35);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { font: 15px/1.65 "Segoe UI", system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text);
+         display: flex; flex-direction: column; overflow: hidden; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  a { color: var(--accent); }
+  svg.i { width: 18px; height: 18px; flex: none; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* Header */
+  header { display: flex; align-items: center; gap: 12px; padding: 12px 18px; border-bottom: 1px solid var(--border);
+           background: var(--surface); box-shadow: var(--shadow); z-index: 2; }
+  header img.av { width: 38px; height: 38px; border-radius: 11px; }
+  .htitle { display: flex; flex-direction: column; line-height: 1.25; }
+  .htitle b { font-size: 16px; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .dot.ok { background: var(--ok); } .dot.off { background: var(--danger); }
+  .spacer { flex: 1; }
+  .hbtn { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--border); background: var(--surface);
+          border-radius: 10px; padding: 8px 12px; font-size: 13px; color: var(--text); }
+  .hbtn:hover { background: var(--surface-2); }
+  .hbtn.icon { padding: 8px; }
+  .hbtn.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  .hbtn:disabled { opacity: .5; cursor: default; }
+
+  /* Conversation column */
+  main { flex: 1; overflow-y: auto; }
+  .col { max-width: 760px; margin: 0 auto; padding: 24px 18px 8px; }
+
+  /* About panel */
+  .about { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px 20px;
+           box-shadow: var(--shadow); margin-bottom: 20px; }
+  .about h2 { margin: 0 0 4px; font-size: 17px; }
+  .about p { margin: 8px 0; color: var(--muted); }
+  .about ul { margin: 10px 0 4px; padding-left: 18px; color: var(--muted); }
+  .about li { margin: 5px 0; }
+  .about .facts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .fact { background: var(--surface-2); border-radius: 9px; padding: 7px 11px; font-size: 12.5px; color: var(--text); }
+  .fact b { color: var(--accent); }
+
+  /* Starter chips */
+  .starters { display: flex; flex-wrap: wrap; gap: 9px; margin-bottom: 8px; }
+  .chip { border: 1px solid var(--border); background: var(--surface); border-radius: 20px; padding: 8px 14px;
+          font-size: 13px; color: var(--text); transition: .15s; }
+  .chip:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+  /* Messages */
+  .msg { display: flex; margin: 16px 0; gap: 11px; animation: rise .3s ease-out both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+  .msg.user { justify-content: flex-end; }
+  .msg.user .b { background: var(--user-bg); color: var(--user-text); padding: 11px 15px; border-radius: 18px 18px 5px 18px;
+                 max-width: 85%; white-space: pre-wrap; }
+  .msg.bot img.av { width: 30px; height: 30px; border-radius: 9px; flex: none; margin-top: 2px; }
+  .msg.bot .b { flex: 1; min-width: 0; }
+  .b p:first-child { margin-top: 0; } .b p:last-child { margin-bottom: 0; }
+  .b pre { background: var(--code); padding: 12px; border-radius: 10px; overflow-x: auto; }
+  .b code { background: var(--code); padding: 1px 5px; border-radius: 5px; font-size: .92em; }
+  .b pre code { background: none; padding: 0; }
+  .b .genimg { display: block; max-width: min(100%, 420px); height: auto; border-radius: 12px; margin: 2px 0 10px;
+               border: 1px solid var(--border); box-shadow: var(--shadow); }
+  .typing { display: inline-flex; gap: 4px; }
+  .typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); animation: blink 1.2s infinite both; }
+  .typing i:nth-child(2) { animation-delay: .2s; } .typing i:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+
+  /* Composer */
+  footer { border-top: 1px solid var(--border); background: var(--surface); padding: 12px 18px; }
+  .composer { max-width: 760px; margin: 0 auto; display: flex; gap: 10px; align-items: flex-end;
+              background: var(--surface-2); border: 1px solid var(--border); border-radius: 16px; padding: 8px 8px 8px 14px; }
+  .composer textarea { flex: 1; border: none; background: none; color: var(--text); resize: none; font: inherit;
+                       max-height: 160px; outline: none; padding: 6px 0; }
+  .send { width: 40px; height: 40px; border: none; border-radius: 12px; background: var(--accent); color: #fff;
+          display: grid; place-items: center; flex: none; }
+  .send:disabled { opacity: .4; cursor: default; }
+  .hint { max-width: 760px; margin: 7px auto 0; font-size: 11.5px; color: var(--muted); text-align: center; }
+
+  /* Buddy mascot */
+  #buddy { position: fixed; right: max(16px, calc((100% - 760px) / 2 - 150px)); bottom: 104px; z-index: 5;
+           display: flex; flex-direction: column; align-items: center; pointer-events: none;
+           opacity: 0; transform: translateY(18px) scale(.9); transition: opacity .25s ease, transform .25s ease; }
+  #buddy.show { opacity: 1; transform: none; }
+  #buddy img { width: 104px; height: 112px; object-fit: contain; transform-origin: 50% 100%;
+               filter: drop-shadow(0 8px 10px rgba(0,0,0,.2)); pointer-events: auto; cursor: pointer; transition: filter .2s; }
+  #buddy img:hover { filter: drop-shadow(0 8px 14px rgba(91,79,245,.45)); }
+  #buddySay { position: relative; max-width: 210px; margin-bottom: 6px; padding: 5px 11px; border-radius: 12px; font-size: 12px; font-weight: 600;
+              background: var(--surface); color: var(--text); border: 1px solid var(--border); box-shadow: var(--shadow);
+              white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #buddySay[hidden] { display: none; }
+  #buddy.pose-search img  { animation: tap .32s ease-in-out infinite; }
+  #buddy.pose-read img    { animation: jog .5s ease-in-out infinite; }
+  #buddy.pose-launch img  { animation: launch .9s ease-out infinite; }
+  #buddy.pose-think img   { animation: sway 1.8s ease-in-out infinite; }
+  #buddy.pose-present img { animation: bob 1.6s ease-in-out infinite; }
+  #buddy.pose-done img    { animation: pop .55s ease-out; }
+  #buddy.pose-side img    { animation: shake .5s ease-in-out 2; }
+  #buddy.pose-idle img    { animation: breathe 3.2s ease-in-out infinite; }
+  #buddy.pose-wave img    { animation: greet .7s ease-in-out 3; }
+  @keyframes breathe { 50% { transform: translateY(-3px) scale(1.015); } }
+  @keyframes greet { 25% { transform: rotate(4deg); } 75% { transform: rotate(-4deg); } }
+  @keyframes bob { 50% { transform: translateY(-6px); } }
+  @keyframes tap { 50% { transform: translateY(-2px) scale(1.01); } }
+  @keyframes jog { 0%,100% { transform: translateX(-4px) rotate(-3deg); } 50% { transform: translateX(4px) translateY(-4px) rotate(3deg); } }
+  @keyframes launch { 0% { transform: translateY(8px); } 45% { transform: translateY(-16px); } 100% { transform: translateY(8px); } }
+  @keyframes sway { 50% { transform: rotate(-5deg); } }
+  @keyframes pop { 0% { transform: scale(.6); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
+  @keyframes shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+  @media (max-width: 980px) { #buddy { display: none; } }
+  @media (max-width: 640px) { .col { padding: 16px 14px 4px; } .msg.user .b { max-width: 90%; } }
+</style>
+</head>
+<body>
+<header>
+  <img class="av" src="/mascot/avatar.png" alt="">
+  <div class="htitle">
+    <b>Nimras</b>
+    <span class="badge"><span class="dot" id="dot"></span><span id="modelName">connecting…</span></span>
+  </div>
+  <span class="spacer"></span>
+  <button class="hbtn" id="webBtn" title="Search the internet when it helps"><svg class="i" viewBox="0 0 24 24" id="webIcon"></svg><span id="webLabel">Web</span></button>
+  <button class="hbtn" id="newBtn" title="Start a fresh conversation">New chat</button>
+  <button class="hbtn icon" id="themeBtn" title="Light / dark" aria-label="Toggle theme"></button>
+  <a class="hbtn" href="/" title="Back to the full workspace">Workspace →</a>
+</header>
+
+<main>
+  <div class="col">
+    <section class="about" id="about">
+      <h2>One-on-one with your AI</h2>
+      <p>This is a quiet space to just talk with Nimras and get a feel for how the model thinks — no files,
+         no reports, just conversation. Ask it anything, including about itself.</p>
+      <ul>
+        <li><b>It runs entirely on your computer.</b> Nothing you type here leaves your machine (unless web search is on).</li>
+        <li><b>It thinks by predicting text,</b> not by looking up facts — so it can sound confident and still be wrong. Double-check anything important.</li>
+        <li><b>Internet search is on</b> (the 🌐 button, top right). When a question needs facts or current info, Nimras looks it up on the web and cites sources; turn it off to keep answers fully local.</li>
+        <li><b>It learns from you</b> through 👍 / 👎 and “remember that…”, but the model itself is never retrained.</li>
+      </ul>
+      <div class="facts" id="facts"></div>
+    </section>
+
+    <div class="starters" id="starters"></div>
+    <div id="list"></div>
+  </div>
+</main>
+
+<footer>
+  <div class="composer">
+    <textarea id="input" rows="1" placeholder="Talk with Nimras…" autofocus></textarea>
+    <button class="send" id="send" title="Send" aria-label="Send"></button>
+  </div>
+  <div class="hint">Nimras can be wrong — it's a small model running on your PC. Press Enter to send, Shift+Enter for a new line.</div>
+</footer>
+
+<div id="buddy" aria-hidden="true"><div id="buddySay" hidden></div><img id="buddyImg" alt="Nimras mascot"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const ICONS = {
+  globe: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/>',
+  send: '<path d="M12 19V5M5 12l7-7 7 7"/>',
+  stop: '<rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" stroke="none"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+};
+const ic = n => `<svg class="i" viewBox="0 0 24 24">${ICONS[n]}</svg>`;
+
+// ---- Theme (shared with the workspace)
+function currentTheme() {
+  try { const t = JSON.parse(localStorage.getItem("nimras.theme")); if (t) return t; } catch {}
+  return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+function applyTheme(t) {
+  document.documentElement.dataset.theme = t;
+  try { localStorage.setItem("nimras.theme", JSON.stringify(t)); } catch {}
+  $("themeBtn").innerHTML = ic(t === "dark" ? "sun" : "moon");
+}
+applyTheme(currentTheme());
+$("themeBtn").onclick = () => applyTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
+
+// ---- Tiny Markdown renderer (code blocks, inline code, bold, italics, headings, lists, paragraphs)
+function esc(s) { return s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function imgHtml(im) { return im && im.url ? `<a href="${im.url}" target="_blank" rel="noopener"><img class="genimg" src="${im.url}" alt="${esc(im.prompt || "")}" loading="lazy"></a>` : ""; }
+function md(src) {
+  const blocks = [];
+  src = src.replace(/```(\w*)\n?([\s\S]*?)(```|$)/g, (_, l, code) => {
+    blocks.push(`<pre><code>${esc(code.replace(/\n$/, ""))}</code></pre>`);
+    return `\n\u0000${blocks.length - 1}\u0000\n`;
+  });
+  const inline = t => esc(t)
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>");
+  let html = "", para = [], list = null;
+  const flushP = () => { if (para.length) html += `<p>${para.map(inline).join("<br>")}</p>`; para = []; };
+  const flushL = () => { if (list) html += `<${list.tag}>${list.items.map(i => `<li>${inline(i)}</li>`).join("")}</${list.tag}>`; list = null; };
+  for (const line of src.split("\n")) {
+    let m;
+    if (m = line.match(/^(#{1,4})\s+(.*)/)) { flushP(); flushL(); html += `<h${m[1].length + 2}>${inline(m[2])}</h${m[1].length + 2}>`; }
+    else if (m = line.match(/^\s*[-*]\s+(.*)/)) { flushP(); if (list?.tag !== "ul") { flushL(); list = { tag: "ul", items: [] }; } list.items.push(m[1]); }
+    else if (m = line.match(/^\s*\d+[.)]\s+(.*)/)) { flushP(); if (list?.tag !== "ol") { flushL(); list = { tag: "ol", items: [] }; } list.items.push(m[1]); }
+    else if (!line.trim()) { flushP(); flushL(); }
+    else para.push(line);
+  }
+  flushP(); flushL();
+  return html.replace(/\u0000(\d+)\u0000/g, (_, i) => blocks[+i]);
+}
+
+// ---- Model badge + web toggle
+let model = "", webAvailable = false, webProvider = "";
+let webWanted = true;
+try { const v = JSON.parse(localStorage.getItem("nimras.talk.web")); if (v === false) webWanted = false; } catch {}
+const webOn = () => webWanted && webAvailable;  // whether this session will search the internet
+
+function updateWeb() {
+  const btn = $("webBtn");
+  $("webIcon").innerHTML = ICONS.globe;
+  if (!webAvailable) { btn.disabled = true; btn.classList.remove("active"); $("webLabel").textContent = "Web off"; btn.title = "No search service available"; return; }
+  btn.disabled = false;
+  btn.classList.toggle("active", webWanted);
+  $("webLabel").textContent = webWanted ? "Web: on" : "Web: off";
+  btn.title = webWanted ? `Internet search on (${webProvider})` : "Internet search off — answers from the model only";
+}
+$("webBtn").onclick = () => {
+  webWanted = !webWanted;
+  try { localStorage.setItem("nimras.talk.web", JSON.stringify(webWanted)); } catch {}
+  updateWeb();
+};
+
+async function loadModel() {
+  try {
+    const r = await fetch("/api/models");
+    const d = await r.json();
+    model = d.default || (d.models && d.models[0]) || "";
+    webProvider = d.web_search || "";
+    webAvailable = !!webProvider;
+    updateWeb();
+    $("dot").className = "dot ok";
+    $("modelName").textContent = `${model || "model"} · running locally${webOn() ? " · web on" : ""}`;
+    const params = /:1b/i.test(model) ? "~1 billion" : /3b|latest/i.test(model) ? "~3 billion" : "local";
+    $("facts").innerHTML =
+      `<span class="fact">Model <b>${esc(model || "?")}</b></span>` +
+      `<span class="fact">Size <b>${params} parameters</b></span>` +
+      `<span class="fact">Runs <b>on your PC</b></span>` +
+      `<span class="fact">Internet <b>${webOn() ? "on" : "off"}</b></span>`;
+  } catch {
+    $("dot").className = "dot off";
+    $("modelName").textContent = "can't reach Nimras — is the server running?";
+  }
+}
+
+// ---- Buddy mascot
+const buddy = {
+  timer: null, pose: "",
+  act(pose, say) {
+    clearTimeout(this.timer);
+    const el = $("buddy"), img = $("buddyImg");
+    if (this.pose !== pose) {
+      this.pose = pose;
+      img.src = `/mascot/${pose}.png`;
+      img.style.animation = "none"; void img.offsetWidth; img.style.animation = "";  // restart animation
+    }
+    el.className = `show pose-${pose}`;
+    const s = $("buddySay");
+    s.textContent = say ? (say.length > 46 ? say.slice(0, 45) + "…" : say) : "";
+    s.hidden = !say;
+  },
+  rest(delay = 0) { clearTimeout(this.timer); this.timer = setTimeout(() => this.act("idle"), delay); },
+};
+// A little life while idle.
+const FIDGETS = [["wave", "Hi there!"], ["side", ""], ["think", "Hmm…"], ["present", "Ask me anything!"], ["done", ""]];
+setInterval(() => {
+  if (busy || document.hidden || buddy.pose !== "idle" || !$("buddy").classList.contains("show")) return;
+  if (Math.random() < 0.55) return;
+  const [p, say] = FIDGETS[Math.floor(Math.random() * FIDGETS.length)];
+  buddy.act(p, say); buddy.rest(2200);
+}, 7000);
+const HELLOS = ["Hi! I'm Nimras.", "Ready when you are!", "I run right here on your computer.", "Ask me anything!", "Let's chat!"];
+$("buddyImg").addEventListener("click", () => {
+  if (busy) return;
+  buddy.act("wave", HELLOS[Math.floor(Math.random() * HELLOS.length)]); buddy.rest(2600);
+});
+
+// ---- Conversation
+const KEY = "nimras.talk";
+let messages = [];
+try { messages = JSON.parse(localStorage.getItem(KEY)) || []; } catch {}
+let busy = false, controller = null;
+
+const STARTERS = [
+  "Who are you, in your own words?",
+  "What are you good at, and what are you bad at?",
+  "How do you come up with your answers?",
+  "What should I not trust you with?",
+  "Tell me something interesting.",
+];
+
+function renderStarters() { $("starters").style.display = messages.length ? "none" : "flex"; $("about").style.display = messages.length ? "none" : "block"; }
+function row(role) {
+  const el = document.createElement("div");
+  el.className = "msg " + role;
+  if (role === "bot") { el.innerHTML = `<img class="av" src="/mascot/avatar.png" alt=""><div class="b"></div>`; return [el, el.querySelector(".b")]; }
+  const b = document.createElement("div"); b.className = "b"; el.appendChild(b); return [el, b];
+}
+function addUser(text) { const [el, b] = row("user"); b.textContent = text; $("list").appendChild(el); }
+function renderAll() {
+  $("list").innerHTML = "";
+  for (const m of messages) {
+    if (m.role === "user") addUser(m.content);
+    else { const [el, b] = row("bot"); b.innerHTML = imgHtml(m.image) + md(m.content); $("list").appendChild(el); }
+  }
+  renderStarters();
+}
+function scrollDown() { const m = document.querySelector("main"); m.scrollTop = m.scrollHeight; }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(messages.slice(-60))); } catch {} }
+
+function setBusy(on) {
+  busy = on;
+  $("send").innerHTML = ic(on ? "stop" : "send");
+  $("input").disabled = false;
+}
+
+async function send(text) {
+  text = text.trim();
+  if (!text || busy) return;
+  messages.push({ role: "user", content: text });
+  addUser(text); renderStarters(); save();
+  $("input").value = ""; $("input").style.height = "auto";
+  scrollDown();
+
+  const [el, b] = row("bot");
+  b.innerHTML = `<span class="typing"><i></i><i></i><i></i></span>`;
+  $("list").appendChild(el); scrollDown();
+  setBusy(true);
+  buddy.act("think", webOn() ? "Let me look into that…" : "Thinking…");
+  controller = new AbortController();
+  let reply = "", img = null;
+  try {
+    const r = await fetch("/api/chat", {
+      method: "POST", headers: { "Content-Type": "application/json" }, signal: controller.signal,
+      body: JSON.stringify({ model, web: webOn() ? "auto" : "off", messages: messages.map(m => ({ role: m.role, content: m.content })) }),
+    });
+    if (!r.ok) { let e = `Request failed (${r.status})`; try { e = (await r.json()).error || e; } catch {} throw new Error(e); }
+    const reader = r.body.getReader(), dec = new TextDecoder();
+    let buf = "";
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let nl;
+      while ((nl = buf.indexOf("\n")) >= 0) {
+        const line = buf.slice(0, nl); buf = buf.slice(nl + 1);
+        if (!line.trim()) continue;
+        const evt = JSON.parse(line);
+        if (evt.error) throw new Error(evt.error);
+        if (evt.status) buddy.act(/paint|dream|image/i.test(evt.status) ? "present" : /search/i.test(evt.status) ? "search" : /read/i.test(evt.status) ? "read" : "think", evt.status);
+        if (evt.image) { img = evt.image; b.innerHTML = imgHtml(img) + md(reply); buddy.act("present", "Here's your image!"); scrollDown(); }
+        if (evt.content) {
+          if (!reply) buddy.act("present", img ? "Here's your image!" : "Here's what I think…");
+          reply += evt.content; b.innerHTML = imgHtml(img) + md(reply); scrollDown();
+        }
+      }
+    }
+  } catch (e) {
+    const aborted = e.name === "AbortError";
+    reply = reply || (aborted ? "_(stopped)_" : `⚠️ ${e.message}`);
+    b.innerHTML = imgHtml(img) + md(reply);
+    if (aborted) { buddy.act("idle"); buddy.rest(); }
+    else { buddy.act("side", "Something went wrong."); buddy.rest(3000); }
+  } finally {
+    if (reply.trim() || img) { messages.push({ role: "bot", content: reply, image: img || undefined }); save(); }
+    else el.remove();
+    controller = null; setBusy(false); $("input").focus();
+    if (buddy.pose !== "side" && buddy.pose !== "idle") { buddy.act("done", "Done!"); buddy.rest(2400); }
+  }
+}
+
+// ---- Wiring
+function renderChips() {
+  $("starters").innerHTML = "";
+  for (const s of STARTERS) {
+    const c = document.createElement("button");
+    c.className = "chip"; c.textContent = s;
+    c.onclick = () => send(s);
+    $("starters").appendChild(c);
+  }
+}
+$("send").onclick = () => { if (busy) controller?.abort(); else send($("input").value); };
+$("input").addEventListener("input", e => { e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 160) + "px"; });
+$("input").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(e.target.value); } });
+$("newBtn").onclick = () => { if (busy) controller?.abort(); messages = []; save(); renderAll(); $("input").focus(); };
+
+renderChips();
+setBusy(false);
+renderAll();
+loadModel();
+// Greet with a wave, then settle into resting.
+buddy.act("wave", "Hi! Let's talk."); buddy.rest(2800);
+</script>
+</body>
+</html>

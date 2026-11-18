@@ -1,0 +1,85 @@
+{
+  "source": "Source: sales system, exported Nov 2026",
+  "number_format": "thousands",
+  "charts": [
+    {
+      "type": "bar",
+      "x": "Region",
+      "y": "Sales",
+      "highlight": "North",
+      "title": "North led all regions in sales",
+      "subtitle": "Total sales, Jan-Sep 2026"
+    },
+    {
+      "type": "line",
+      "x": "Month",
+      "y": [
+        "Sales",
+        "Target"
+      ],
+      "highlight": "Sales",
+      "title": "Sales passed target from March",
+      "subtitle": "Monthly sales vs target"
+    },
+    {
+      "type": "pie",
+      "x": "Channel",
+      "y": "Sales",
+      "donut": true,
+      "title": "Online is half of all sales",
+      "subtitle": "Share of sales by channel"
+    },
+    {
+      "type": "dashboard",
+      "title": "Sales report, Q1-Q3 2026",
+      "subtitle": "All regions",
+      "kpis": [
+        {
+          "label": "Total sales",
+          "column": "Sales",
+          "agg": "sum",
+          "format": "currency",
+          "change": 12.4
+        },
+        {
+          "label": "Orders",
+          "column": "Orders",
+          "agg": "sum",
+          "format": "thousands",
+          "change": -3.1
+        },
+        {
+          "label": "Avg. order value",
+          "column": "Sales",
+          "divide_by": "Orders",
+          "format": "currency"
+        }
+      ],
+      "panels": [
+        {
+          "type": "line",
+          "x": "Month",
+          "y": [
+            "Sales",
+            "Target"
+          ],
+          "highlight": "Sales",
+          "title": "Monthly sales vs target"
+        },
+        {
+          "type": "bar",
+          "x": "Region",
+          "y": "Sales",
+          "highlight": "North",
+          "title": "Sales by region"
+        },
+        {
+          "type": "pie",
+          "x": "Channel",
+          "y": "Sales",
+          "title": "Sales by channel"
+        }
+      ]
+    }
+  ]
+}
